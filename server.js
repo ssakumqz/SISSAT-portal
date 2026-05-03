@@ -54,6 +54,7 @@ db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS students (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
+        full_name TEXT,
         lrn TEXT UNIQUE,
         grade_level TEXT,
         section TEXT,
