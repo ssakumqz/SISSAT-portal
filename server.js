@@ -39,6 +39,46 @@ const db = new sqlite3.Database('./sis_database.db');
 // Initialize database tables
 db.serialize(() => {
 
+
+// Assignments table
+    // Users table
+    db.run(`CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE,
+        password TEXT,
+        email TEXT,
+        role TEXT CHECK(role IN ('admin', 'teacher', 'student', 'parent')),
+        first_name TEXT,
+        last_name TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    // Students table
+    db.run(`CREATE TABLE IF NOT EXISTS students (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        full_name TEXT,
+        lrn TEXT UNIQUE,
+        grade_level TEXT,
+        section TEXT,
+        enrollment_status TEXT DEFAULT 'pending',
+        payment_status TEXT DEFAULT 'unpaid',
+        birth_date TEXT,
+        address TEXT,
+        parent_name TEXT,
+        parent_contact TEXT,
+        FOREIGN KEY(user_id) REFERENCES users(id)
+    )`);
+
+    // Subjects table
+    db.run(`CREATE TABLE IF NOT EXISTS subjects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        grade_level TEXT,
+        teacher_id INTEGER,
+        FOREIGN KEY(teacher_id) REFERENCES users(id)
+    )`);
+
 // Add these tables to your existing database initialization
 
 // Assignments table
@@ -112,44 +152,6 @@ db.run(`INSERT OR IGNORE INTO exams (subject_id, title, exam_date, total_points,
         (1, 'Midterm Exam - Mathematics', '2025-06-10', 200, 'Room 101'),
         (1, 'Final Exam - Mathematics', '2025-07-15', 300, 'Room 101'),
         (2, 'Science Quarterly Exam', '2025-06-12', 200, 'Room 102')`);
-
-    // Users table
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE,
-        password TEXT,
-        email TEXT,
-        role TEXT CHECK(role IN ('admin', 'teacher', 'student', 'parent')),
-        first_name TEXT,
-        last_name TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
-
-    // Students table
-    db.run(`CREATE TABLE IF NOT EXISTS students (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        full_name TEXT,
-        lrn TEXT UNIQUE,
-        grade_level TEXT,
-        section TEXT,
-        enrollment_status TEXT DEFAULT 'pending',
-        payment_status TEXT DEFAULT 'unpaid',
-        birth_date TEXT,
-        address TEXT,
-        parent_name TEXT,
-        parent_contact TEXT,
-        FOREIGN KEY(user_id) REFERENCES users(id)
-    )`);
-
-    // Subjects table
-    db.run(`CREATE TABLE IF NOT EXISTS subjects (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        grade_level TEXT,
-        teacher_id INTEGER,
-        FOREIGN KEY(teacher_id) REFERENCES users(id)
-    )`);
 
     // Grades table
     db.run(`CREATE TABLE IF NOT EXISTS grades (
