@@ -38,6 +38,81 @@ const db = new sqlite3.Database('./sis_database.db');
 
 // Initialize database tables
 db.serialize(() => {
+
+// Add these tables to your existing database initialization
+
+// Assignments table
+db.run(`CREATE TABLE IF NOT EXISTS assignments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    subject_id INTEGER,
+    title TEXT,
+    description TEXT,
+    due_date DATE,
+    total_points INTEGER DEFAULT 100,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(subject_id) REFERENCES subjects(id)
+)`);
+
+// Exams table
+db.run(`CREATE TABLE IF NOT EXISTS exams (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    subject_id INTEGER,
+    title TEXT,
+    exam_date DATE,
+    total_points INTEGER DEFAULT 100,
+    room TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(subject_id) REFERENCES subjects(id)
+)`);
+
+// Student Assignments (submissions)
+db.run(`CREATE TABLE IF NOT EXISTS student_assignments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    student_id INTEGER,
+    assignment_id INTEGER,
+    submission TEXT,
+    score INTEGER,
+    submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    status TEXT DEFAULT 'pending',
+    FOREIGN KEY(student_id) REFERENCES students(id),
+    FOREIGN KEY(assignment_id) REFERENCES assignments(id)
+)`);
+
+// Teaching Schedule table
+db.run(`CREATE TABLE IF NOT EXISTS teaching_schedule (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    teacher_id INTEGER,
+    subject_id INTEGER,
+    day_of_week TEXT,
+    start_time TEXT,
+    end_time TEXT,
+    room TEXT,
+    FOREIGN KEY(teacher_id) REFERENCES users(id),
+    FOREIGN KEY(subject_id) REFERENCES subjects(id)
+)`);
+
+// Insert sample schedule data
+db.run(`INSERT OR IGNORE INTO teaching_schedule (teacher_id, subject_id, day_of_week, start_time, end_time, room)
+        VALUES 
+        (2, 1, 'Monday', '08:00', '10:00', 'Room 101'),
+        (2, 1, 'Wednesday', '08:00', '10:00', 'Room 101'),
+        (2, 2, 'Tuesday', '10:00', '12:00', 'Room 102'),
+        (2, 2, 'Thursday', '10:00', '12:00', 'Room 102')`);
+
+// Insert sample assignments
+db.run(`INSERT OR IGNORE INTO assignments (subject_id, title, description, due_date, total_points)
+        VALUES 
+        (1, 'Algebra Homework 1', 'Solve equations 1-20', '2025-05-15', 100),
+        (1, 'Geometry Project', 'Create a model showing geometric shapes', '2025-05-30', 200),
+        (2, 'Lab Report: Photosynthesis', 'Write a detailed lab report', '2025-05-20', 150)`);
+
+// Insert sample exams
+db.run(`INSERT OR IGNORE INTO exams (subject_id, title, exam_date, total_points, room)
+        VALUES 
+        (1, 'Midterm Exam - Mathematics', '2025-06-10', 200, 'Room 101'),
+        (1, 'Final Exam - Mathematics', '2025-07-15', 300, 'Room 101'),
+        (2, 'Science Quarterly Exam', '2025-06-12', 200, 'Room 102')`);
+
     // Users table
     db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -657,6 +732,337 @@ app.get('/api/admin/students', authenticateToken, (req, res) => {
             res.json(rows || []);
         }
     });
+});
+
+// ============= STUDENT: VIEW SUBJECTS =============
+app.get('/api/student/:studentId/subjects', authenticateToken, (req, res) => {
+    const studentId = req.params.studentId;
+    
+    // Get student's grade level first
+    db.get('SELECT grade_level FROM students WHERE id = ?', [studentId], (err, student) => {
+        if (err || !student) {
+            return res.status(404).json({ error: 'Student not found' });
+        }
+        
+        // Get subjects for that grade level
+        db.all(`SELECT s.*, u.full_name as teacher_name 
+                FROM subjects s
+                JOIN users u ON s.teacher_id = u.id
+                WHERE s.grade_level = ? OR s.grade_level = 'Not Assigned'`, 
+                [student.grade_level], (err, subjects) => {
+            if (err) {
+                res.status(500).json({ error: err.message });
+            } else {
+                res.json(subjects || []);
+            }
+        });
+    });
+});
+
+// ============= STUDENT: VIEW ASSIGNMENTS =============
+app.get('/api/student/:studentId/assignments', authenticateToken, (req, res) => {
+    const studentId = req.params.studentId;
+    
+    db.all(`SELECT a.*, s.name as subject_name, 
+            (SELECT status FROM student_assignments WHERE assignment_id = a.id AND student_id = ?) as submission_status,
+            (SELECT score FROM student_assignments WHERE assignment_id = a.id AND student_id = ?) as score
+            FROM assignments a
+            JOIN subjects s ON a.subject_id = s.id
+            ORDER BY a.due_date ASC`, [studentId, studentId], (err, assignments) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+        } else {
+            res.json(assignments || []);
+        }
+    });
+});
+
+// ============= STUDENT: VIEW EXAMS =============
+app.get('/api/student/:studentId/exams', authenticateToken, (req, res) => {
+    const studentId = req.params.studentId;
+    
+    db.all(`SELECT e.*, s.name as subject_name 
+            FROM exams e
+            JOIN subjects s ON e.subject_id = s.id
+            ORDER BY e.exam_date ASC`, (err, exams) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+        } else {
+            res.json(exams || []);
+        }
+    });
+});
+
+// ============= STUDENT: SUBMIT ASSIGNMENT =============
+app.post('/api/student/submit-assignment', authenticateToken, upload.single('submission'), (req, res) => {
+    if (req.user.role !== 'student') {
+        return res.status(403).json({ error: 'Student access required' });
+    }
+    
+    const { assignment_id, student_id } = req.body;
+    const submissionPath = req.file ? req.file.path : null;
+    
+    db.run(`INSERT OR REPLACE INTO student_assignments (student_id, assignment_id, submission, status)
+            VALUES (?, ?, ?, 'submitted')`,
+        [student_id, assignment_id, submissionPath],
+        function(err) {
+            if (err) {
+                res.status(500).json({ error: err.message });
+            } else {
+                res.json({ message: 'Assignment submitted successfully!' });
+            }
+        });
+});
+
+// ============= TEACHER: VIEW SCHEDULE =============
+app.get('/api/teacher/:teacherId/schedule', authenticateToken, (req, res) => {
+    if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    const teacherId = req.params.teacherId;
+    
+    db.all(`SELECT ts.*, s.name as subject_name, subj.name as subject_name
+            FROM teaching_schedule ts
+            JOIN subjects subj ON ts.subject_id = subj.id
+            WHERE ts.teacher_id = ?
+            ORDER BY CASE ts.day_of_week
+                WHEN 'Monday' THEN 1
+                WHEN 'Tuesday' THEN 2
+                WHEN 'Wednesday' THEN 3
+                WHEN 'Thursday' THEN 4
+                WHEN 'Friday' THEN 5
+                ELSE 6
+            END, ts.start_time`, [teacherId], (err, schedule) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+        } else {
+            res.json(schedule || []);
+        }
+    });
+});
+
+// ============= TEACHER: VIEW THEIR SUBJECTS =============
+app.get('/api/teacher/:teacherId/subjects', authenticateToken, (req, res) => {
+    if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    const teacherId = req.params.teacherId;
+    
+    db.all(`SELECT s.*, 
+            (SELECT COUNT(*) FROM students WHERE grade_level = s.grade_level) as student_count
+            FROM subjects s
+            WHERE s.teacher_id = ?`, [teacherId], (err, subjects) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+        } else {
+            res.json(subjects || []);
+        }
+    });
+});
+
+// ============= TEACHER: VIEW ASSIGNMENTS FOR THEIR SUBJECTS =============
+app.get('/api/teacher/:teacherId/assignments', authenticateToken, (req, res) => {
+    if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    const teacherId = req.params.teacherId;
+    
+    db.all(`SELECT a.*, s.name as subject_name, s.grade_level
+            FROM assignments a
+            JOIN subjects s ON a.subject_id = s.id
+            WHERE s.teacher_id = ?
+            ORDER BY a.due_date ASC`, [teacherId], (err, assignments) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+        } else {
+            res.json(assignments || []);
+        }
+    });
+});
+
+// ============= TEACHER: ADD ASSIGNMENT =============
+app.post('/api/teacher/add-assignment', authenticateToken, (req, res) => {
+    if (req.user.role !== 'teacher' && req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    const { subject_id, title, description, due_date, total_points } = req.body;
+    
+    db.run(`INSERT INTO assignments (subject_id, title, description, due_date, total_points)
+            VALUES (?, ?, ?, ?, ?)`,
+        [subject_id, title, description, due_date, total_points],
+        function(err) {
+            if (err) {
+                res.status(500).json({ error: err.message });
+            } else {
+                res.json({ message: 'Assignment added successfully!', id: this.lastID });
+            }
+        });
+});
+
+// ============= FIXED: ADD STUDENT (Working version) =============
+app.post('/api/admin/add-student', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+    
+    const { full_name, username, password, email, lrn, grade_level, section, birth_date, parent_name, parent_contact } = req.body;
+    
+    console.log('Received student data:', req.body); // Debug log
+    
+    if (!full_name || !username || !password || !email) {
+        return res.status(400).json({ error: 'Missing required fields: name, username, password, and email are required' });
+    }
+    
+    try {
+        // Check if username exists
+        const existingUser = await new Promise((resolve, reject) => {
+            db.get('SELECT id FROM users WHERE username = ?', [username], (err, row) => {
+                if (err) reject(err);
+                resolve(row);
+            });
+        });
+        
+        if (existingUser) {
+            return res.status(400).json({ error: 'Username already exists. Please choose a different username.' });
+        }
+        
+        // Check if email exists
+        const existingEmail = await new Promise((resolve, reject) => {
+            db.get('SELECT id FROM users WHERE email = ?', [email], (err, row) => {
+                if (err) reject(err);
+                resolve(row);
+            });
+        });
+        
+        if (existingEmail) {
+            return res.status(400).json({ error: 'Email already exists. Please use a different email.' });
+        }
+        
+        // Create user account
+        const hashedPassword = bcrypt.hashSync(password, 10);
+        const userId = await new Promise((resolve, reject) => {
+            db.run(`INSERT INTO users (username, password, email, role, full_name) 
+                    VALUES (?, ?, ?, 'student', ?)`,
+                [username, hashedPassword, email, full_name],
+                function(err) {
+                    if (err) {
+                        console.error('User insert error:', err);
+                        reject(err);
+                    }
+                    resolve(this.lastID);
+                });
+        });
+        
+        // Generate LRN if not provided
+        const finalLRN = lrn || `LRN${Date.now()}${Math.floor(Math.random() * 1000)}`;
+        const finalGradeLevel = grade_level || 'Grade 7';
+        const finalSection = section || 'Not Assigned';
+        
+        // Create student record
+        await new Promise((resolve, reject) => {
+            db.run(`INSERT INTO students (user_id, lrn, grade_level, section, birth_date, parent_name, parent_contact, enrollment_status, payment_status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'enrolled', 'pending')`,
+                [userId, finalLRN, finalGradeLevel, finalSection, birth_date || null, parent_name || null, parent_contact || null],
+                (err) => {
+                    if (err) {
+                        console.error('Student insert error:', err);
+                        reject(err);
+                    }
+                    resolve();
+                });
+        });
+        
+        res.json({ 
+            message: `Student ${full_name} added successfully! Username: ${username}, Password: ${password}`,
+            user_id: userId 
+        });
+        
+    } catch (error) {
+        console.error('Add student error:', error);
+        res.status(500).json({ error: 'Failed to add student: ' + error.message });
+    }
+});
+
+// ============= FIXED: ADD TEACHER (Working version) =============
+app.post('/api/admin/add-teacher', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+    
+    const { full_name, username, password, email, subject_specialization } = req.body;
+    
+    console.log('Received teacher data:', req.body);
+    
+    if (!full_name || !username || !password || !email) {
+        return res.status(400).json({ error: 'Missing required fields: name, username, password, and email are required' });
+    }
+    
+    try {
+        // Check if username exists
+        const existingUser = await new Promise((resolve, reject) => {
+            db.get('SELECT id FROM users WHERE username = ?', [username], (err, row) => {
+                if (err) reject(err);
+                resolve(row);
+            });
+        });
+        
+        if (existingUser) {
+            return res.status(400).json({ error: 'Username already exists' });
+        }
+        
+        // Check if email exists
+        const existingEmail = await new Promise((resolve, reject) => {
+            db.get('SELECT id FROM users WHERE email = ?', [email], (err, row) => {
+                if (err) reject(err);
+                resolve(row);
+            });
+        });
+        
+        if (existingEmail) {
+            return res.status(400).json({ error: 'Email already exists' });
+        }
+        
+        // Create teacher user account
+        const hashedPassword = bcrypt.hashSync(password, 10);
+        const userId = await new Promise((resolve, reject) => {
+            db.run(`INSERT INTO users (username, password, email, role, full_name) 
+                    VALUES (?, ?, ?, 'teacher', ?)`,
+                [username, hashedPassword, email, full_name],
+                function(err) {
+                    if (err) reject(err);
+                    resolve(this.lastID);
+                });
+        });
+        
+        // If subject specialization provided, assign subjects
+        if (subject_specialization && subject_specialization.trim()) {
+            const subjects = subject_specialization.split(',').map(s => s.trim());
+            for (const subjectName of subjects) {
+                await new Promise((resolve, reject) => {
+                    db.run(`INSERT INTO subjects (name, grade_level, teacher_id) 
+                            VALUES (?, 'Not Assigned', ?)`,
+                        [subjectName, userId],
+                        (err) => {
+                            if (err) reject(err);
+                            resolve();
+                        });
+                });
+            }
+        }
+        
+        res.json({ 
+            message: `Teacher ${full_name} added successfully! Username: ${username}, Password: ${password}`,
+            user_id: userId 
+        });
+        
+    } catch (error) {
+        console.error('Add teacher error:', error);
+        res.status(500).json({ error: 'Failed to add teacher: ' + error.message });
+    }
 });
 
 app.listen(PORT, () => {

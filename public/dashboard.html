@@ -20,11 +20,13 @@
             background: linear-gradient(135deg, #031049 0%, #0b0450 100%);
             color: white;
             padding: 15px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
         
         .header-content {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             display: flex;
             justify-content: space-between;
@@ -45,7 +47,7 @@
         }
         
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 40px auto;
             padding: 0 20px;
         }
@@ -55,6 +57,12 @@
             margin-bottom: 30px;
         }
         
+        h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+        
         .dashboard-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -62,86 +70,175 @@
             margin-bottom: 30px;
         }
         
-        .grade-card, .info-card {
+        .card {
             background: white;
             border-radius: 10px;
             padding: 25px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
-        .grade-card h4 {
-            color: #667eea;
+        .subject-card {
+            background: linear-gradient(135deg, #031049 0%, #0b0450 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .subject-card h4 {
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .assignment-card, .exam-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
             margin-bottom: 15px;
-            font-size: 20px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s;
         }
         
-        .grade-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
+        .assignment-card:hover, .exam-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
-        .grade-label {
-            font-weight: 500;
-            color: #666;
-        }
-        
-        .grade-value {
+        .assignment-title, .exam-title {
             font-weight: bold;
             color: #333;
+            margin-bottom: 10px;
+            font-size: 18px;
         }
         
-        .final-grade {
-            font-size: 28px;
-            color: #667eea;
-            text-align: center;
-            margin-top: 15px;
-            padding: 10px;
+        .assignment-details, .exam-details {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .due-date {
+            color: #dc3545;
             font-weight: bold;
         }
         
-        .remarks {
-            text-align: center;
-            padding: 10px;
+        .btn-submit {
+            background: #28a745;
+            color: white;
+            padding: 8px 16px;
+            border: none;
             border-radius: 5px;
+            cursor: pointer;
             margin-top: 10px;
+        }
+        
+        .btn-submit:hover {
+            background: #218838;
+        }
+        
+        .submitted {
+            color: #28a745;
             font-weight: bold;
         }
         
-        .passed {
-            background: #d4edda;
-            color: #155724;
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            flex-wrap: wrap;
         }
         
-        .failed {
-            background: #f8d7da;
-            color: #721c24;
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 16px;
         }
         
-        .info-card h3 {
+        .tab.active {
             color: #667eea;
-            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .subjects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .info-section {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
         }
         
         .info-item {
             padding: 8px 0;
+            border-bottom: 1px solid #eee;
         }
         
         .info-label {
-            font-weight: 500;
+            font-weight: bold;
             color: #666;
+            display: inline-block;
+            width: 150px;
         }
         
-        .no-grades {
-            text-align: center;
-            padding: 40px;
-            color: #999;
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
         }
         
         @media (max-width: 768px) {
-            .dashboard-stats {
+            .subjects-grid {
                 grid-template-columns: 1fr;
+            }
+            .info-label {
+                width: 120px;
             }
         }
     </style>
@@ -160,10 +257,51 @@
     <div class="container">
         <h1>My Academic Dashboard</h1>
         
-        <div id="studentInfo" class="info-card" style="margin-bottom: 30px;"></div>
+        <div id="studentInfo" class="info-section"></div>
         
-        <h2 style="margin-bottom: 20px;">📊 My Grades</h2>
-        <div id="gradesContainer" class="dashboard-stats"></div>
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('subjects')">📚 My Subjects</button>
+            <button class="tab" onclick="switchTab('assignments')">📝 Assignments</button>
+            <button class="tab" onclick="switchTab('exams')">📅 Exams</button>
+            <button class="tab" onclick="switchTab('grades')">📊 My Grades</button>
+        </div>
+        
+        <div id="subjectsTab" class="tab-content active">
+            <h2>Enrolled Subjects</h2>
+            <div id="subjectsContainer" class="subjects-grid"></div>
+        </div>
+        
+        <div id="assignmentsTab" class="tab-content">
+            <h2>My Assignments</h2>
+            <div id="assignmentsContainer"></div>
+        </div>
+        
+        <div id="examsTab" class="tab-content">
+            <h2>Upcoming Exams</h2>
+            <div id="examsContainer"></div>
+        </div>
+        
+        <div id="gradesTab" class="tab-content">
+            <h2>My Grades</h2>
+            <div id="gradesContainer"></div>
+        </div>
+    </div>
+    
+    <!-- Assignment Submission Modal -->
+    <div id="submitModal" class="modal">
+        <div class="modal-content">
+            <h3>Submit Assignment</h3>
+            <form id="submitForm" enctype="multipart/form-data">
+                <input type="hidden" id="submit_assignment_id">
+                <div class="form-group">
+                    <label>Upload File (PDF/Word/Image)</label>
+                    <input type="file" id="submission_file" required>
+                </div>
+                <button type="submit">Submit Assignment</button>
+                <button type="button" onclick="closeModal()" style="margin-top: 10px; background: #999;">Cancel</button>
+            </form>
+            <div id="submitMessage"></div>
+        </div>
     </div>
     
     <script>
@@ -187,7 +325,7 @@
                 if (students && students.length > 0) {
                     currentStudent = students[0];
                     document.getElementById('studentInfo').innerHTML = `
-                        <h3>📋 Enrollment Information</h3>
+                        <h2 style="margin-bottom: 15px;">📋 Enrollment Information</h2>
                         <div class="info-item"><span class="info-label">Student Name:</span> ${currentStudent.full_name || 'N/A'}</div>
                         <div class="info-item"><span class="info-label">LRN:</span> ${currentStudent.lrn || 'N/A'}</div>
                         <div class="info-item"><span class="info-label">Grade Level:</span> ${currentStudent.grade_level || 'N/A'}</div>
@@ -196,11 +334,114 @@
                         <div class="info-item"><span class="info-label">Payment Status:</span> ${currentStudent.payment_status || 'N/A'}</div>
                     `;
                     
-                    // Load grades
+                    await loadSubjects(currentStudent.id);
+                    await loadAssignments(currentStudent.id);
+                    await loadExams(currentStudent.id);
                     await loadGrades(currentStudent.id);
                 }
             } catch (error) {
                 console.error('Error loading student info:', error);
+            }
+        }
+        
+        async function loadSubjects(studentId) {
+            try {
+                const response = await fetch(`/api/student/${studentId}/subjects`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const subjects = await response.json();
+                
+                if (!subjects || subjects.length === 0) {
+                    document.getElementById('subjectsContainer').innerHTML = '<div class="card">No subjects enrolled yet.</div>';
+                    return;
+                }
+                
+                let html = '';
+                subjects.forEach(subject => {
+                    html += `
+                        <div class="subject-card">
+                            <h4>${subject.name}</h4>
+                            <p>Teacher: ${subject.teacher_name}</p>
+                            <p>Grade Level: ${subject.grade_level}</p>
+                        </div>
+                    `;
+                });
+                document.getElementById('subjectsContainer').innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error loading subjects:', error);
+            }
+        }
+        
+        async function loadAssignments(studentId) {
+            try {
+                const response = await fetch(`/api/student/${studentId}/assignments`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const assignments = await response.json();
+                
+                if (!assignments || assignments.length === 0) {
+                    document.getElementById('assignmentsContainer').innerHTML = '<div class="card">No assignments posted yet.</div>';
+                    return;
+                }
+                
+                let html = '';
+                assignments.forEach(assignment => {
+                    const isSubmitted = assignment.submission_status === 'submitted';
+                    const dueDate = new Date(assignment.due_date);
+                    const today = new Date();
+                    const isOverdue = dueDate < today && !isSubmitted;
+                    
+                    html += `
+                        <div class="assignment-card">
+                            <div class="assignment-title">${assignment.title}</div>
+                            <div class="assignment-details">Subject: ${assignment.subject_name}</div>
+                            <div class="assignment-details">${assignment.description}</div>
+                            <div class="assignment-details due-date">Due: ${assignment.due_date}</div>
+                            <div class="assignment-details">Points: ${assignment.total_points}</div>
+                            ${isSubmitted ? 
+                                `<div class="submitted">✓ Submitted - Score: ${assignment.score || 'Pending'}</div>` :
+                                `<button class="btn-submit" onclick="openSubmitModal(${assignment.id})">Submit Assignment</button>
+                                ${isOverdue ? '<div style="color: red; margin-top: 5px;">⚠️ Overdue!</div>' : ''}`
+                            }
+                        </div>
+                    `;
+                });
+                document.getElementById('assignmentsContainer').innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error loading assignments:', error);
+            }
+        }
+        
+        async function loadExams(studentId) {
+            try {
+                const response = await fetch(`/api/student/${studentId}/exams`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const exams = await response.json();
+                
+                if (!exams || exams.length === 0) {
+                    document.getElementById('examsContainer').innerHTML = '<div class="card">No exams scheduled yet.</div>';
+                    return;
+                }
+                
+                let html = '';
+                exams.forEach(exam => {
+                    html += `
+                        <div class="exam-card">
+                            <div class="exam-title">${exam.title}</div>
+                            <div class="exam-details">Subject: ${exam.subject_name}</div>
+                            <div class="exam-details">Date: ${exam.exam_date}</div>
+                            <div class="exam-details">Room: ${exam.room}</div>
+                            <div class="exam-details">Total Points: ${exam.total_points}</div>
+                        </div>
+                    `;
+                });
+                document.getElementById('examsContainer').innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error loading exams:', error);
             }
         }
         
@@ -212,55 +453,82 @@
                 const grades = await response.json();
                 
                 if (!grades || grades.length === 0) {
-                    document.getElementById('gradesContainer').innerHTML = '<div class="grade-card"><p class="no-grades">No grades have been posted yet.</p></div>';
+                    document.getElementById('gradesContainer').innerHTML = '<div class="card">No grades posted yet.</div>';
                     return;
                 }
                 
-                let gradesHtml = '';
+                let html = '<div class="dashboard-stats">';
                 grades.forEach(grade => {
-                    const remarksClass = grade.remarks === 'Passed' ? 'passed' : 'failed';
-                    gradesHtml += `
-                        <div class="grade-card">
-                            <h4>${grade.subject_name}</h4>
-                            <div class="grade-item">
-                                <span class="grade-label">Teacher:</span>
-                                <span class="grade-value">${grade.teacher_name}</span>
-                            </div>
-                            <div class="grade-item">
-                                <span class="grade-label">Term:</span>
-                                <span class="grade-value">${grade.term}</span>
-                            </div>
-                            <div class="grade-item">
-                                <span class="grade-label">Quiz (20%):</span>
-                                <span class="grade-value">${grade.quiz}</span>
-                            </div>
-                            <div class="grade-item">
-                                <span class="grade-label">Recitation (15%):</span>
-                                <span class="grade-value">${grade.recitation}</span>
-                            </div>
-                            <div class="grade-item">
-                                <span class="grade-label">Exam (35%):</span>
-                                <span class="grade-value">${grade.exam}</span>
-                            </div>
-                            <div class="grade-item">
-                                <span class="grade-label">Project (30%):</span>
-                                <span class="grade-value">${grade.project}</span>
-                            </div>
-                            <div class="final-grade">
-                                Final Grade: ${grade.final_grade}
-                            </div>
-                            <div class="remarks ${remarksClass}">
-                                ${grade.remarks}
-                            </div>
+                    const remarksClass = grade.remarks === 'Passed' ? 'style="color: #28a745;"' : 'style="color: #dc3545;"';
+                    html += `
+                        <div class="card">
+                            <h3>${grade.subject_name}</h3>
+                            <div class="info-item">Term: ${grade.term}</div>
+                            <div class="info-item">Quiz: ${grade.quiz}</div>
+                            <div class="info-item">Recitation: ${grade.recitation}</div>
+                            <div class="info-item">Exam: ${grade.exam}</div>
+                            <div class="info-item">Project: ${grade.project}</div>
+                            <div class="info-item"><strong>Final Grade: ${grade.final_grade}</strong></div>
+                            <div class="info-item" ${remarksClass}><strong>${grade.remarks}</strong></div>
                         </div>
                     `;
                 });
-                document.getElementById('gradesContainer').innerHTML = gradesHtml;
+                html += '</div>';
+                document.getElementById('gradesContainer').innerHTML = html;
                 
             } catch (error) {
                 console.error('Error loading grades:', error);
-                document.getElementById('gradesContainer').innerHTML = '<div class="grade-card"><p class="no-grades">Error loading grades. Please try again later.</p></div>';
             }
+        }
+        
+        function openSubmitModal(assignmentId) {
+            document.getElementById('submit_assignment_id').value = assignmentId;
+            document.getElementById('submitModal').style.display = 'flex';
+            document.getElementById('submitForm').reset();
+            document.getElementById('submitMessage').innerHTML = '';
+        }
+        
+        function closeModal() {
+            document.getElementById('submitModal').style.display = 'none';
+        }
+        
+        document.getElementById('submitForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('assignment_id', document.getElementById('submit_assignment_id').value);
+            formData.append('student_id', currentStudent.id);
+            formData.append('submission', document.getElementById('submission_file').files[0]);
+            
+            try {
+                const response = await fetch('/api/student/submit-assignment', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('submitMessage').innerHTML = '<div style="color: green; padding: 10px;">✅ Assignment submitted successfully!</div>';
+                    setTimeout(() => {
+                        closeModal();
+                        loadAssignments(currentStudent.id);
+                    }, 1500);
+                } else {
+                    document.getElementById('submitMessage').innerHTML = '<div style="color: red; padding: 10px;">❌ Error: ' + data.error + '</div>';
+                }
+            } catch (error) {
+                document.getElementById('submitMessage').innerHTML = '<div style="color: red; padding: 10px;">❌ Network error</div>';
+            }
+        });
+        
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(`${tabName}Tab`).classList.add('active');
         }
         
         function logout() {
@@ -269,6 +537,12 @@
         }
         
         loadStudentInfo();
+        
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                closeModal();
+            }
+        }
     </script>
 </body>
 </html>
